@@ -39,4 +39,24 @@ public class KafkaProducerService {
             System.err.println("❌ Error serializing message: " + e.getMessage());
         }
     }
+
+    public void sendMessage(String webhookData) {
+        try {
+            String jsonData = objectMapper.writeValueAsString(webhookData);
+
+            CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, webhookData);
+
+            future.thenAccept(result -> {
+                System.out.println("✅ Message sent successfully! " +
+                        "Topic: " + result.getRecordMetadata().topic() +
+                        ", Partition: " + result.getRecordMetadata().partition() +
+                        ", Offset: " + result.getRecordMetadata().offset());
+            }).exceptionally(ex -> {
+                System.err.println("❌ Message sending failed: " + ex.getMessage());
+                return null; // Returning null to satisfy the lambda signature
+            });
+        } catch (Exception e) {
+            System.err.println("❌ Error serializing message: " + e.getMessage());
+        }
+    }
 }

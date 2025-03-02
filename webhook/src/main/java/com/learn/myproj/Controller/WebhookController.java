@@ -3,10 +3,8 @@ package com.learn.myproj.Controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learn.myproj.DTO.WebhookData;
-import com.learn.myproj.DTO.WebhookRequest;
 import com.learn.myproj.Service.KafkaProducerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,29 +22,15 @@ public class WebhookController {
         this.kafkaProducerService = kafkaProducerService;
     }
 
-    @PostMapping("/messenger")
-    public String receiveMessengerWebhook(@RequestBody WebhookRequest request) {
+    @PostMapping("/{source}")
+    public String receiveMessengerWebhook(@PathVariable String source, @RequestBody WebhookData request) {
         try {
-            WebhookData webhookData = new WebhookData(request, "messenger"); // Set platform to "messenger"
-            String jsonData = objectMapper.writeValueAsString(webhookData);
-            System.out.println(jsonData);
-            kafkaProducerService.sendMessage(webhookData);
-            return "Messenger Webhook received and forwarded to Kafka!";
+            String json = objectMapper.writeValueAsString(request);
+            WebhookData webhookData = new WebhookData(source, json);
+            kafkaProducerService.sendMessage(objectMapper.writeValueAsString(webhookData));
+            return String.format("%s Webhook received!", source);
         } catch (JsonProcessingException e) {
-            return "Error converting Messenger webhook data to JSON";
-        }
-    }
-
-    @PostMapping("/instadm")
-    public String receiveInstaDmWebhook(@RequestBody WebhookRequest request) {
-        try {
-            WebhookData webhookData = new WebhookData(request, "instagram"); // Set platform to "instagram"
-            String jsonData = objectMapper.writeValueAsString(webhookData);
-            System.out.println(jsonData);
-            kafkaProducerService.sendMessage(webhookData);
-            return "Instagram Webhook received and forwarded to Kafka!";
-        } catch (JsonProcessingException e) {
-            return "Error converting Instagram webhook data to JSON";
+            return String.format("Error converting %s webhook data to JSON", source);
         }
     }
 }
