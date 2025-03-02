@@ -24,16 +24,29 @@ public class WebhookController {
         this.kafkaProducerService = kafkaProducerService;
     }
 
-    @PostMapping("/receive")
-    public String receiveWebhook(@RequestBody WebhookRequest request) {
+    @PostMapping("/messenger")
+    public String receiveMessengerWebhook(@RequestBody WebhookRequest request) {
         try {
-            WebhookData webhookData = new WebhookData(request);
-            String jsonData = objectMapper.writeValueAsString(webhookData); // Convert to JSON
+            WebhookData webhookData = new WebhookData(request, "messenger"); // Set platform to "messenger"
+            String jsonData = objectMapper.writeValueAsString(webhookData);
             System.out.println(jsonData);
             kafkaProducerService.sendMessage(webhookData);
-            return "Webhook received and forwarded to Kafka!";
+            return "Messenger Webhook received and forwarded to Kafka!";
         } catch (JsonProcessingException e) {
-            return "Error converting webhook data to JSON";
+            return "Error converting Messenger webhook data to JSON";
+        }
+    }
+
+    @PostMapping("/instadm")
+    public String receiveInstaDmWebhook(@RequestBody WebhookRequest request) {
+        try {
+            WebhookData webhookData = new WebhookData(request, "instagram"); // Set platform to "instagram"
+            String jsonData = objectMapper.writeValueAsString(webhookData);
+            System.out.println(jsonData);
+            kafkaProducerService.sendMessage(webhookData);
+            return "Instagram Webhook received and forwarded to Kafka!";
+        } catch (JsonProcessingException e) {
+            return "Error converting Instagram webhook data to JSON";
         }
     }
 }

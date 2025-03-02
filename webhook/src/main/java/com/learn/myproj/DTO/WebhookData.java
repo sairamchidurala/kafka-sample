@@ -1,26 +1,92 @@
 package com.learn.myproj.DTO;
 
-import java.time.Instant;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WebhookData {
-    private String id;
-    private String payload; // Ensure this field exists
+    private String platform; // "messenger" or "instagram"
+    private String type; // "message", "comment", "reaction", etc.
+    private String senderId;
+    private String recipientId;
+    private String message;
+    private String timestamp;
 
-    public WebhookData(WebhookRequest request) {
-        id = request.getId();
-        payload = request.getPayload();
+    // Default constructor
+    public WebhookData() {}
+
+    // Constructor that maps incoming webhook request
+    public WebhookData(WebhookRequest request, String platform) {
+        this.platform = platform;
+
+        if (platform.equals("messenger") && request.getEntry() != null && !request.getEntry().isEmpty()) {
+            var messagingEvent = request.getEntry().getFirst().getMessaging().getFirst();
+            this.senderId = messagingEvent.getSender().getId();
+            this.recipientId = messagingEvent.getRecipient().getId();
+            this.timestamp = String.valueOf(messagingEvent.getTimestamp());
+
+            if (messagingEvent.getMessage() != null) {
+                this.type = "message";
+                this.message = messagingEvent.getMessage().getText();
+            }
+        } else if (platform.equals("instagram") && request.getEntry() != null && !request.getEntry().isEmpty()) {
+            var messagingEvent = request.getEntry().getFirst().getMessaging().getFirst();
+            this.senderId = messagingEvent.getSender().getId();
+            this.recipientId = messagingEvent.getRecipient().getId();
+            this.timestamp = String.valueOf(messagingEvent.getTimestamp());
+
+            if (messagingEvent.getMessage() != null) {
+                this.type = "message";
+                this.message = messagingEvent.getMessage().getText();
+            }
+        }
     }
 
-
     // Getters and Setters
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public String getPlatform() {
+        return platform;
+    }
 
-    public String getPayload() { return payload; }
-    public void setPayload(String payload) { this.payload = payload; }
+    public void setPlatform(String platform) {
+        this.platform = platform;
+    }
 
-    @Override
-    public String toString() {
-        return "WebhookData{id='" + id + "', payload='" + payload + "}";
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getSenderId() {
+        return senderId;
+    }
+
+    public void setSenderId(String senderId) {
+        this.senderId = senderId;
+    }
+
+    public String getRecipientId() {
+        return recipientId;
+    }
+
+    public void setRecipientId(String recipientId) {
+        this.recipientId = recipientId;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
     }
 }

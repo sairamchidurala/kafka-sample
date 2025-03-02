@@ -1,6 +1,7 @@
-package com.learn.myproj.DTO;
+package com.learn.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)

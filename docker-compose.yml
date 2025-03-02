@@ -31,27 +31,27 @@ services:
     volumes:
       - kafka_data:/bitnami
 
-  webhook:
-    build:
-      context: ./webhook
-    container_name: webhook
-    restart: always
-    ports:
-      - "8080:8080"
-    depends_on:
-      - kafka
-    environment:
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+#  webhook:
+#    build:
+#      context: ./webhook
+#    container_name: webhook
+#    restart: always
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - kafka
+#    environment:
+#      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 
-  service:
-    build:
-      context: ./service
-    container_name: service
-    restart: always
-    depends_on:
-      - kafka
-    environment:
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+#  service:
+#    build:
+#      context: ./service
+#    container_name: service
+#    restart: always
+#    depends_on:
+#      - kafka
+#    environment:
+#      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 
 volumes:
   zookeeper_data:
