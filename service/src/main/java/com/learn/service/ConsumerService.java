@@ -42,7 +42,7 @@ public class ConsumerService {
                 String pageAccessToken = getAuthToken(sourceId);
 
                 // Send reply
-                sendReplyToUser(senderId, messageType, pageAccessToken);
+                sendReplyToUser(senderId, messageType, pageAccessToken, webhookData);
             } catch (Exception e) {
                 System.err.println("Error processing webhook message: " + e.getMessage());
                 e.printStackTrace();
@@ -70,10 +70,13 @@ public class ConsumerService {
         return pageTokens.getOrDefault(pageId, "DEFAULT_ACCESS_TOKEN");
     }
 
-    public void sendReplyToUser(String senderId, String messageType, String accessToken) {
+    public void sendReplyToUser(String senderId, String messageType, String accessToken, WebhookData webhookData) {
         String url = "https://graph.facebook.com/v18.0/me/messages?access_token=" + accessToken;
 
         WebClient webClient = WebClient.create(url);
+        if("text message".equals(messageType)) {
+            messageType += String.format("\nMessage: %s", webhookData.getText());
+        }
 
         // Construct the message payload
         Map<String, Object> messageData = Map.of(
