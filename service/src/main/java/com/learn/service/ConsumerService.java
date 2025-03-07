@@ -1,6 +1,7 @@
 package com.learn.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.learn.message.SendMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -32,23 +33,21 @@ public class ConsumerService {
     private void handleWebhook(WebhookData webhookData) {
         String platform = webhookData.getPlatform(); // "messenger" or "instagram"
 
-        if ("messenger".equals(platform)) {
-            try {
-                String senderId = webhookData.getSenderId();
-                String sourceId = webhookData.getSourceId();
-                String messageType = determineMessageType(webhookData);
+        switch (platform) {
+            case "messenger":
+            case "whatsapp":
+                try {
+                    String senderId = webhookData.getSenderId();
+                    String sourceId = webhookData.getSourceId();
+                    String messageType = determineMessageType(webhookData);
 
-                // Get authentication token for the sourceId (Page ID)
-                String pageAccessToken = getAuthToken(sourceId);
-
-                // Send reply
-                sendReplyToUser(senderId, messageType, pageAccessToken, webhookData);
-            } catch (Exception e) {
-                System.err.println("Error processing webhook message: " + e.getMessage());
-                e.printStackTrace();
-            }
-        } else {
-            System.out.println("Unhandled platform: " + platform);
+                    SendMessages.sendReplyToUser(senderId, messageType, webhookData);
+                } catch (Exception e) {
+                    logger.error("Error processing webhook message: {}", e.getMessage());
+                }
+                break;
+            default:
+                logger.info("platform not handled: {}", platform);
         }
     }
 
@@ -63,35 +62,4 @@ public class ConsumerService {
         return "unknown";
     }
 
-    private String getAuthToken(String pageId) {
-        Map<String, String> pageTokens = Map.of(
-                "419537554568805", "EAAD9bPA9SbMBOzzgs0QBglqa5tQaZCIUG70ZBRVKBXST2yaQwvpc6XqF6zL5QxvIFQHAh5Ioot1pDwfCFKkJ4M8PPHmIz3BWirhaFff1jaB9HZA8qpFdYBugwNnROCiosXBH7BoQ4sZA5CQdXofnIlgeLCtNfdtqG3NJ5bLC4JClfzNEhpL8TbHywpAZA1klMssWV5lBk"
-        );
-        return pageTokens.getOrDefault(pageId, "DEFAULT_ACCESS_TOKEN");
-    }
-
-    public void sendReplyToUser(String senderId, String messageType, String accessToken, WebhookData webhookData) {
-        String url = "https://graph.facebook.com/v18.0/me/messages?access_token=" + accessToken;
-
-        WebClient webClient = WebClient.create(url);
-        if("text message".equals(messageType)) {
-            messageType += String.format("\nMessage: %s", webhookData.getText());
-        }
-
-        // Construct the message payload
-        Map<String, Object> messageData = Map.of(
-                "recipient", Map.of("id", senderId),
-                "message", Map.of("text", "You sent a " + messageType)
-        );
-
-        // Send POST request using WebClient
-        webClient.post()
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .bodyValue(messageData)
-                .retrieve()
-                .bodyToMono(String.class)
-                .doOnTerminate(() -> System.out.println("Message sent successfully"))
-                .doOnError(e -> System.err.println("Error sending message: " + e.getMessage()))
-                .subscribe(); // Asynchronous call
-    }
 }
