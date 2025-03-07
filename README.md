@@ -96,7 +96,16 @@ The service automatically detects the message type and replies using the Meta AP
    ```
 3. Run the application:
    ```sh
-   mvn spring-boot:run
+   Uncomment webhook, service in docker-compose.yml
+   docker build -t webhook .
+   docker build -t service .
+   docker-compose build --no-cache kafka-zookeeper
+
+   Sending message for testing kafka:
+     docker exec -it kafka kafka-console-producer.sh --broker-list kafka:9092 --topic test-topic
+   
+   Listening to kafka topic:
+     docker exec -it kafka kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test-topic --from-beginning
    ```
 
 ## Error Handling
