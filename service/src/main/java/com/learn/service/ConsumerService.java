@@ -1,17 +1,14 @@
 package com.learn.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.learn.Configuration.KafkaConsumerConfig;
 import com.learn.message.SendMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.http.MediaType;
 
 @Service
 public class ConsumerService {
@@ -19,10 +16,24 @@ public class ConsumerService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @KafkaListener(topics = "test-topic", groupId = "test-group")
+    @Value("${spring.kafka.consumer.topic}")
+    public String topic;
+
+    @Value("${spring.kafka.consumer.groupId}")
+    public String groupId;
+
+    private final KafkaConsumerConfig kafkaConsumerConfig;
+
+    @Autowired
+    public ConsumerService(KafkaConsumerConfig kafkaConsumerConfig) {
+        this.kafkaConsumerConfig = kafkaConsumerConfig;
+    }
+
+    @KafkaListener(topics = "#{@kafkaConsumerConfig.topic}",
+        groupId = "#{@kafkaConsumerConfig.groupId}")
     public void consume(String message) {
         try {
-            System.out.println("📥 Received Json: " + message);
+            logger.info("📥 Received Json: {}\ntopic: {}, groupId: {}", message, topic, groupId);
             WebhookData webhookData = objectMapper.readValue(message, WebhookData.class);
             handleWebhook(webhookData);
         } catch (Exception e) {
@@ -38,7 +49,6 @@ public class ConsumerService {
             case "whatsapp":
                 try {
                     String senderId = webhookData.getSenderId();
-                    String sourceId = webhookData.getSourceId();
                     String messageType = determineMessageType(webhookData);
 
                     SendMessages.sendReplyToUser(senderId, messageType, webhookData);
