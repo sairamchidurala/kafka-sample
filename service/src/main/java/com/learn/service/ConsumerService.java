@@ -1,12 +1,10 @@
 package com.learn.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.learn.Configuration.KafkaConsumerConfig;
 import com.learn.message.SendMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
@@ -16,48 +14,52 @@ public class ConsumerService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${spring.kafka.consumer.topic}")
-    public String topic;
-
-    @Value("${spring.kafka.consumer.groupId}")
-    public String groupId;
-
-    private final KafkaConsumerConfig kafkaConsumerConfig;
-
-    @Autowired
-    public ConsumerService(KafkaConsumerConfig kafkaConsumerConfig) {
-        this.kafkaConsumerConfig = kafkaConsumerConfig;
-    }
-
     @KafkaListener(topics = "#{@kafkaConsumerConfig.topic}",
         groupId = "#{@kafkaConsumerConfig.groupId}")
     public void consume(String message) {
         try {
-            logger.info("📥 Received Json: {}\ntopic: {}, groupId: {}", message, topic, groupId);
-            WebhookData webhookData = objectMapper.readValue(message, WebhookData.class);
-            handleWebhook(webhookData);
+            logger.info("📥 Received Json: {}", message);
+            handleWebhook(message);
         } catch (Exception e) {
-            System.err.println("Error processing webhook data: " + e.getMessage());
+            logger.error("Error processing webhook data: {}", e.getMessage());
         }
     }
 
-    private void handleWebhook(WebhookData webhookData) {
-        String platform = webhookData.getPlatform(); // "messenger" or "instagram"
+    private void handleWebhook(String message) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readTree(message);
 
-        switch (platform) {
-            case "messenger":
-            case "whatsapp":
-                try {
-                    String senderId = webhookData.getSenderId();
-                    String messageType = determineMessageType(webhookData);
+            String source = rootNode.get("source").asText();
+            JsonNode payload = rootNode.get("payload");
 
-                    SendMessages.sendReplyToUser(senderId, messageType, webhookData);
-                } catch (Exception e) {
-                    logger.error("Error processing webhook message: {}", e.getMessage());
-                }
-                break;
-            default:
-                logger.info("platform not handled: {}", platform);
+            switch (source) {
+                case "messenger":
+                case "whatsapp":
+                    WebhookData webhookData = new WebhookData(source, payload.toString());
+                    processWebhookData(webhookData);
+                    break;
+                case "telegram":
+                    logger.info("\uD83D\uDCE8 Processing Telegram Webhook: {}", payload);
+                    // Add Telegram-specific processing logic here
+                    break;
+                default:
+                    logger.warn("Platform not handled: {}", source);
+            }
+        } catch (Exception e) {
+            logger.error("Error processing webhook message: {}", e.getMessage());
+        }
+    }
+
+    private void processWebhookData(WebhookData webhookData) {
+        try {
+            String senderId = webhookData.getSenderId();
+            String messageType = determineMessageType(webhookData);
+
+            // Send reply to user
+            SendMessages.sendReplyToUser(senderId, messageType, webhookData);
+        } catch (Exception e) {
+            logger.error("Error while sending message: {}", e.getMessage());
         }
     }
 
@@ -71,5 +73,4 @@ public class ConsumerService {
         }
         return "unknown";
     }
-
 }

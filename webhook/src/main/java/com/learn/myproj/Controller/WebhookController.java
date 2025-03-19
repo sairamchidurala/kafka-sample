@@ -1,9 +1,10 @@
 package com.learn.myproj.Controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.learn.myproj.DTO.WebhookData;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.learn.myproj.Service.KafkaProducerService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +15,8 @@ public class WebhookController {
     @Autowired
     private KafkaProducerService kafkaProducerService;
 
+    private final Logger logger = LoggerFactory.getLogger(WebhookController.class);
+
     private static final String TOPIC = "webhook-topic";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -22,15 +25,37 @@ public class WebhookController {
         this.kafkaProducerService = kafkaProducerService;
     }
 
-    @PostMapping("/{source}")
-    public String receiveMessengerWebhook(@PathVariable String source, @RequestBody WebhookData request) {
+    @PostMapping(value = {"/telegram", "/{source}"})
+    public String receiveMessengerWebhook(
+            @PathVariable(required = false) String source,
+            @RequestBody String requestBody) { // Use a single @RequestBody parameter
         try {
-            String json = objectMapper.writeValueAsString(request);
-            WebhookData webhookData = new WebhookData(source, json);
-            kafkaProducerService.sendMessage(objectMapper.writeValueAsString(webhookData));
-            return String.format("%s Webhook received!", source);
-        } catch (JsonProcessingException e) {
-            return String.format("Error converting %s webhook data to JSON", source);
+            String sourceName = (source == null) ? "telegram" : source;
+
+            logger.info("Received data for {}: {}", sourceName, requestBody);
+            String wrappedMessage = wrapMessageWithSource(sourceName, requestBody);
+            logger.info("Wrapped message for {}: {}", sourceName, wrappedMessage);
+
+            // Send the wrapped message to Kafka
+            kafkaProducerService.sendMessage(wrappedMessage);
+
+            return String.format("%s Webhook received!", sourceName);
+        } catch (Exception e) {
+            logger.error("Error processing webhook data for source: {}", source, e);
+            return String.format("Error processing %s webhook data", source != null ? source : "telegram");
+        }
+    }
+
+    // Helper method to wrap the message with the source
+    private String wrapMessageWithSource(String source, String message) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            ObjectNode wrappedMessage = objectMapper.createObjectNode();
+            wrappedMessage.put("source", source);
+            wrappedMessage.set("payload", objectMapper.readTree(message));
+            return objectMapper.writeValueAsString(wrappedMessage);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to wrap message with source", e);
         }
     }
 }
