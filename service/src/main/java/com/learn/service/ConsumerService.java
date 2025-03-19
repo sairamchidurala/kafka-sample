@@ -3,6 +3,7 @@ package com.learn.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learn.message.SendMessages;
+import com.learn.message.TelegramService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -41,7 +42,8 @@ public class ConsumerService {
                     break;
                 case "telegram":
                     logger.info("\uD83D\uDCE8 Processing Telegram Webhook: {}", payload);
-                    // Add Telegram-specific processing logic here
+                    TelegramService telegramService = new TelegramService();
+                    telegramService.handlePayloadAndSendMessage(payload.toString());
                     break;
                 default:
                     logger.warn("Platform not handled: {}", source);

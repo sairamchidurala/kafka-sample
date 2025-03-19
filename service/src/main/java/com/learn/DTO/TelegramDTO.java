@@ -78,11 +78,12 @@ public class TelegramDTO {
 
     // Represents a document
     public static class Document {
-        public String file_id;
-        public String file_unique_id;
-        public PhotoSize thumb;
         public String file_name;
         public String mime_type;
+        public PhotoSize thumbnail;
+        public PhotoSize thumb;
+        public String file_id;
+        public String file_unique_id;
         public int file_size;
     }
 
@@ -162,6 +163,8 @@ public class TelegramDTO {
         public Location location;
         public Poll poll;
         public Message reply_to_message;
+        public Sticker sticker;
+        public Animation animation;
     }
 
     // Represents an incoming update from Telegram (webhook event)
@@ -177,5 +180,34 @@ public class TelegramDTO {
     // Represents a webhook request payload
     public static class WebhookRequest {
         public Update update;
+    }
+
+    // Represents a sticker
+    public static class Sticker {
+        public int width;
+        public int height;
+        public String emoji;
+        public String set_name;
+        public boolean is_animated;
+        public boolean is_video;
+        public String type;
+        public PhotoSize thumbnail;
+        public PhotoSize thumb;
+        public String file_id;
+        public String file_unique_id;
+        public int file_size;
+    }
+
+    public static class Animation {
+        public String file_name;
+        public String mime_type;
+        public int duration;
+        public int width;
+        public int height;
+        public PhotoSize thumbnail;
+        public PhotoSize thumb;
+        public String file_id;
+        public String file_unique_id;
+        public int file_size;
     }
 }
