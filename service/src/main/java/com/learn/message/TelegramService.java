@@ -1,6 +1,7 @@
 package com.learn.message;
 
 import com.learn.DTO.TelegramDTO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -9,6 +10,7 @@ import java.util.Map;
 
 public class TelegramService {
 
+    @Value("${telegram.bot.token}")
     private static final String TELEGRAM_BOT_TOKEN = "7872018983:AAGV94nsgbceH_bEhu6Pic0LlvqQ6g3bhmI";
     private static final String TELEGRAM_API_URL = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage";
 

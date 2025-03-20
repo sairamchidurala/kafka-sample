@@ -2,6 +2,8 @@ package com.learn.message;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learn.service.WebhookData;
+import com.oracle.jrockit.jfr.ValueDefinition;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -31,17 +33,21 @@ public class SendMessages {
     }
 
     public static String getAuthToken(String pageId) {
+        @Value("${fb.page.tokens.419537554568805}")
+        String fb_token;
         Map<String, String> pageTokens = Map.of(
-                "419537554568805", "EAAD9bPA9SbMBOzzgs0QBglqa5tQaZCIUG70ZBRVKBXST2yaQwvpc6XqF6zL5QxvIFQHAh5Ioot1pDwfCFKkJ4M8PPHmIz3BWirhaFff1jaB9HZA8qpFdYBugwNnROCiosXBH7BoQ4sZA5CQdXofnIlgeLCtNfdtqG3NJ5bLC4JClfzNEhpL8TbHywpAZA1klMssWV5lBk"
+                "419537554568805", fb_token
         );
         return pageTokens.getOrDefault(pageId, "DEFAULT_ACCESS_TOKEN");
     }
 
     public static void SendWhatsappMessage(String payload) throws Exception {
         String url = "https://waba-v2.360dialog.io/messages";
+        @Value("${whatsapp.token}")
+        String token;
         WebClient webClient = WebClient.builder()
                 .baseUrl(url)
-                .defaultHeader("D360-Api-Key", "79yGm5QcneYYmWyBkeXpkFDhAK") // Replace with your actual API key
+                .defaultHeader("D360-Api-Key", token) // Replace with your actual API key
                 .defaultHeader("Content-Type", "application/json")
                 .build();
 //        payload = """
