@@ -2,15 +2,22 @@ package com.learn.message;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learn.service.WebhookData;
-import com.oracle.jrockit.jfr.ValueDefinition;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.learn.Repository.AccessTokenService;
+
 import java.util.Map;
 
 public class SendMessages {
+
+//    @Autowired
+//    public static AccessTokenService accessTokenService = new AccessTokenService();
+
     public static void sendReplyToUser(String senderId, String messageType, WebhookData webhookData) throws Exception {
         if("text message".equals(messageType)) {
             messageType += String.format(" Message: %s", webhookData.getText());
@@ -33,8 +40,9 @@ public class SendMessages {
     }
 
     public static String getAuthToken(String pageId) {
-        @Value("${fb.page.tokens.419537554568805}")
-        String fb_token;
+         @Value("${fb.page.tokens.419537554568805}")
+         String fb_token;
+//        String fb_token = accessTokenService.getAccessTokenBySourceId(pageId).toString();
         Map<String, String> pageTokens = Map.of(
                 "419537554568805", fb_token
         );
