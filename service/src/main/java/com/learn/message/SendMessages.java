@@ -2,7 +2,7 @@ package com.learn.message;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learn.service.WebhookData;
-import com.oracle.jrockit.jfr.ValueDefinition;
+import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -11,6 +11,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.Map;
 
 public class SendMessages {
+
+    @Value("${fb.page.tokens.419537554568805}")
+    private static String fb_token;
+
+    @Value("${whatsapp.token}")
+    private static String token;
+
     public static void sendReplyToUser(String senderId, String messageType, WebhookData webhookData) throws Exception {
         if("text message".equals(messageType)) {
             messageType += String.format(" Message: %s", webhookData.getText());
@@ -33,8 +40,7 @@ public class SendMessages {
     }
 
     public static String getAuthToken(String pageId) {
-        @Value("${fb.page.tokens.419537554568805}")
-        String fb_token;
+
         Map<String, String> pageTokens = Map.of(
                 "419537554568805", fb_token
         );
@@ -43,8 +49,6 @@ public class SendMessages {
 
     public static void SendWhatsappMessage(String payload) throws Exception {
         String url = "https://waba-v2.360dialog.io/messages";
-        @Value("${whatsapp.token}")
-        String token;
         WebClient webClient = WebClient.builder()
                 .baseUrl(url)
                 .defaultHeader("D360-Api-Key", token) // Replace with your actual API key

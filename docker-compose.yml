@@ -1,59 +1,27 @@
 version: '3.8'
-
 services:
-  zookeeper:
-    image: bitnami/zookeeper:latest
-    container_name: zookeeper
-    restart: always
-    ports:
-      - "2181:2181"
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-    volumes:
-      - zookeeper_data:/bitnami
-
   kafka:
-    image: bitnami/kafka:latest
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka
     container_name: kafka
-    restart: always
-    depends_on:
-      - zookeeper
     ports:
       - "9092:9092"
+      - "9093:9093"
     environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
-      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      KAFKA_KRAFT_MODE: "true"  # This enables KRaft mode in Kafka.
+      KAFKA_PROCESS_ROLES: controller,broker  # Kafka acts as both broker and controller.
+      KAFKA_NODE_ID: 1  # A unique ID for this Kafka instance.
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093"  # Defines the controller voters.
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LOG_DIRS: /var/lib/kafka/data  # Where Kafka stores its logs.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"  # Kafka will automatically create topics if needed.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1  # Since we’re running one broker, one replica is enough.
+      KAFKA_LOG_RETENTION_HOURS: 168  # Keep logs for 7 days.
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0  # No delay for consumer rebalancing.
+      CLUSTER_ID: "Mk3OEYBSD34fcwNTJENDM2Qk"  # A unique ID for the Kafka cluster.
     volumes:
-      - kafka_data:/bitnami
-
-#  webhook:
-#    build:
-#      context: ./webhook
-#    container_name: webhook
-#    restart: always
-#    ports:
-#      - "8080:8080"
-#    depends_on:
-#      - kafka
-#    environment:
-#      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-
-#  service:
-#    build:
-#      context: ./service
-#    container_name: service
-#    restart: always
-#    depends_on:
-#      - kafka
-#    environment:
-#      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-
-volumes:
-  zookeeper_data:
-  kafka_data:
-
+      - /var/run/docker.sock:/var/run/docker.sock
