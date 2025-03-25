@@ -25,3 +25,24 @@ services:
       CLUSTER_ID: "Mk3OEYBSD34fcwNTJENDM2Qk"  # A unique ID for the Kafka cluster.
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'mydb'
+      # So you don't have to use root, but you can if you like
+      MYSQL_USER: 'user'
+      # You can use whatever password you like
+      MYSQL_PASSWORD: 'CantSayPassword'
+      # Password for root access
+      MYSQL_ROOT_PASSWORD: 'NoPasswordForIt'
+      MYSQL_HOST: 'db'
+    ports:
+      # <Port exposed> : <MySQL Port running inside container>
+      - '3306:3306'
+    volumes:
+      - my-db:/var/lib/mysql
+
+volumes:
+  my-db:

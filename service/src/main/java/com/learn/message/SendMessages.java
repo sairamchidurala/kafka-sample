@@ -1,7 +1,9 @@
 package com.learn.message;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.learn.service.AccessTokenService;
 import com.learn.service.WebhookData;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.http.HttpHeaders;
@@ -12,13 +14,20 @@ import java.util.Map;
 
 public class SendMessages {
 
-    @Value("${fb.page.tokens.419537554568805}")
-    private static String fb_token;
+//    @Value("${fb.page.tokens.419537554568805}")
+//    private static String fb_token;
+//
+//    @Value("${whatsapp.token}")
+//    private static String token;
 
-    @Value("${whatsapp.token}")
-    private static String token;
+    private final AccessTokenService accessTokenService;
 
-    public static void sendReplyToUser(String senderId, String messageType, WebhookData webhookData) throws Exception {
+    @Autowired  // Optional in newer Spring versions if using constructor injection
+    public SendMessages(AccessTokenService accessTokenService) {
+        this.accessTokenService = accessTokenService;
+    }
+
+    public void sendReplyToUser(String senderId, String messageType, WebhookData webhookData) throws Exception {
         if("text message".equals(messageType)) {
             messageType += String.format(" Message: %s", webhookData.getText());
         }
@@ -35,27 +44,27 @@ public class SendMessages {
                     {"messaging_product": "whatsapp","to":"%s","type":"text","text":{"body":"%s"}}
                     """, webhookData.getSenderId(), messageType);
             System.out.println(payload);
-            SendWhatsappMessage(payload);
+            SendWhatsappMessage(payload, webhookData.getSourceId());
         }
     }
 
-    public static String getAuthToken(String pageId) {
+//    public static String getAuthToken(String pageId) {
+//
+//        Map<String, String> pageTokens = Map.of(
+//                "419537554568805", fb_token
+//        );
+//        return pageTokens.getOrDefault(pageId, "DEFAULT_ACCESS_TOKEN");
+//    }
 
-        Map<String, String> pageTokens = Map.of(
-                "419537554568805", fb_token
-        );
-        return pageTokens.getOrDefault(pageId, "DEFAULT_ACCESS_TOKEN");
-    }
-
-    public static void SendWhatsappMessage(String payload) throws Exception {
+    public void SendWhatsappMessage(String payload, String sourceId) throws Exception {
         String url = "https://waba-v2.360dialog.io/messages";
+        String token = accessTokenService.getActiveAccessTokenBySourceId(sourceId);
         WebClient webClient = WebClient.builder()
                 .baseUrl(url)
                 .defaultHeader("D360-Api-Key", token) // Replace with your actual API key
                 .defaultHeader("Content-Type", "application/json")
                 .build();
-//        payload = """
-//                {"messaging_product":"whatsapp","recipient_type":"individual","to":"919985235601","type":"template","template":{"namespace":"c7e26b1f_7178_43c5_bbe1_6504e1d8f791","language":{"policy":"deterministic","code":"en"},"name":"itc_booklet","components":[{"type":"header","parameters":[{"image":{"link":"https://help.tataplay.com/uploads/templateimages/1736769463363.jpeg"},"type":"image"}]},{"type":"body","parameters":[]},{"type":"button","sub_type":"quick_reply","index":1,"parameters":[{"type":"payload","payload":"2"}]},{"type":"button","sub_type":"quick_reply","index":2,"parameters":[{"type":"payload","payload":"2"}]}]}}""";
+
         webClient.post()
                 .bodyValue(payload)
                 .retrieve()
@@ -64,8 +73,9 @@ public class SendMessages {
                 .doOnError(error -> System.err.println("Error sending message: " + error.getMessage())).subscribe();
     }
 
-    public static void sendMessageToFb(String payload, String sourceId) throws Exception {
-        String url = "https://graph.facebook.com/v18.0/me/messages?access_token=" + getAuthToken(sourceId);
+    public void sendMessageToFb(String payload, String sourceId) throws Exception {
+        String token = accessTokenService.getActiveAccessTokenBySourceId(sourceId);
+        String url = "https://graph.facebook.com/v18.0/me/messages?access_token=" + token;
         WebClient webClient = WebClient.create(url);
 
         // Send POST request using WebClient

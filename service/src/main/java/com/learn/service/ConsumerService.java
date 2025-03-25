@@ -8,12 +8,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class ConsumerService {
     private final Logger logger = LoggerFactory.getLogger(ConsumerService.class);
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Autowired
+    private AccessTokenService accessTokenService;
 
     @KafkaListener(topics = "#{@kafkaConsumerConfig.topic}",
         groupId = "#{@kafkaConsumerConfig.groupId}")
@@ -32,7 +36,17 @@ public class ConsumerService {
             JsonNode rootNode = objectMapper.readTree(message);
 
             String source = rootNode.get("source").asText();
+            String sourceId = null;
             JsonNode payload = rootNode.get("payload");
+            if(source != null) {
+                String[] parts = source.split("/");
+                if (parts.length >= 2 && parts[0].equalsIgnoreCase("telegram")) {
+                    source = parts[0];
+                    sourceId = parts[1];
+                }
+            } else {
+                throw new IllegalArgumentException("source not found");
+            }
 
             switch (source) {
                 case "messenger":
@@ -42,8 +56,8 @@ public class ConsumerService {
                     break;
                 case "telegram":
                     logger.info("\uD83D\uDCE8 Processing Telegram Webhook: {}", payload);
-                    TelegramService telegramService = new TelegramService();
-                    telegramService.handlePayloadAndSendMessage(payload.toString());
+                    TelegramService telegramService = new TelegramService(accessTokenService);
+                    telegramService.handlePayloadAndSendMessage(payload.toString(), sourceId);
                     break;
                 default:
                     logger.warn("Platform not handled: {}", source);
@@ -59,7 +73,7 @@ public class ConsumerService {
             String messageType = determineMessageType(webhookData);
 
             // Send reply to user
-            SendMessages.sendReplyToUser(senderId, messageType, webhookData);
+            new SendMessages(accessTokenService).sendReplyToUser(senderId, messageType, webhookData);
         } catch (Exception e) {
             logger.error("Error while sending message: {}", e.getMessage());
         }

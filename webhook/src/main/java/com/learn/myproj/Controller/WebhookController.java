@@ -25,12 +25,13 @@ public class WebhookController {
         this.kafkaProducerService = kafkaProducerService;
     }
 
-    @PostMapping(value = {"/telegram", "/{source}"})
+    @PostMapping(value = {"/telegram/{botToken}", "/{source}"})
     public String receiveMessengerWebhook(
             @PathVariable(required = false) String source,
-            @RequestBody String requestBody) { // Use a single @RequestBody parameter
+            @PathVariable(required = false) String botToken,
+            @RequestBody String requestBody) {
         try {
-            String sourceName = (source == null) ? "telegram" : source;
+            String sourceName = (source == null) ? "telegram/" + botToken : source;
 
             logger.info("Received data for {}: {}", sourceName, requestBody);
             String wrappedMessage = wrapMessageWithSource(sourceName, requestBody);

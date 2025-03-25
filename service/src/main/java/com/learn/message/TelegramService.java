@@ -1,26 +1,46 @@
 package com.learn.message;
 
 import com.learn.DTO.TelegramDTO;
+import com.learn.service.AccessTokenService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Service
 public class TelegramService {
 
-    @Value("${telegram.bot.token}")
-    private static final String TELEGRAM_BOT_TOKEN = "7872018983:AAGV94nsgbceH_bEhu6Pic0LlvqQ6g3bhmI";
-    private static final String TELEGRAM_API_URL = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage";
+//    @Autowired
+//    private AccessTokenService accessTokenService;
+
+    private final AccessTokenService accessTokenService;
+
+    @Autowired  // Optional in newer Spring versions if using constructor injection
+    public TelegramService(AccessTokenService accessTokenService) {
+        this.accessTokenService = accessTokenService;
+    }
+
+//    @Value("${telegram.bot.token}")
+//    private static final String TELEGRAM_BOT_TOKEN = "7872018983:AAGV94nsgbceH_bEhu6Pic0LlvqQ6g3bhmI";
+//    private static final String TELEGRAM_API_URL = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage";
+
+    private static String TELEGRAM_API_URL = "https://api.telegram.org/bot%s/sendMessage";
+    private static String TELEGRAM_STICKER_URL = "https://api.telegram.org/bot%s/sendSticker";
+    private static String TELEGRAM_MEDIA_URL = "https://api.telegram.org/bot%s/%s";
+    private static String sourceId = "";
 
     /**
      * Handles the incoming payload and sends a response to Telegram.
      *
      * @param payload The payload received from the consumer (as a String).
      */
-    public void handlePayloadAndSendMessage(String payload) {
+    public void handlePayloadAndSendMessage(String payload, String sourceId1) {
         try {
+            sourceId = sourceId1;
             // Parse the payload using TelegramDTO
             TelegramDTO telegramDTO = new TelegramDTO(payload.getBytes());
             TelegramDTO.Update update = telegramDTO.getUpdate();
@@ -103,8 +123,7 @@ public class TelegramService {
 
             // Send the request to the Telegram API
             RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<String> response = restTemplate.postForEntity(
-                    "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendSticker",
+            ResponseEntity<String> response = restTemplate.postForEntity(String.format(TELEGRAM_STICKER_URL, accessTokenService.getActiveAccessTokenBySourceId(sourceId)),
                     requestEntity,
                     String.class
             );
@@ -142,7 +161,7 @@ public class TelegramService {
 
             // Send the request to the Telegram API
             RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<String> response = restTemplate.postForEntity(TELEGRAM_API_URL, requestEntity, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity(String.format(TELEGRAM_API_URL, accessTokenService.getActiveAccessTokenBySourceId(sourceId).toString()), requestEntity, String.class);
 
             // Log the response
             if (response.getStatusCode() == HttpStatus.OK) {
@@ -196,7 +215,8 @@ public class TelegramService {
             // Send the request to the Telegram API
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> response = restTemplate.postForEntity(
-                    "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/" + endpoint,
+//                    "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/" + endpoint,
+                    String.format(TELEGRAM_MEDIA_URL, accessTokenService.getActiveAccessTokenBySourceId(sourceId).toString(), endpoint),
                     requestEntity,
                     String.class
             );
