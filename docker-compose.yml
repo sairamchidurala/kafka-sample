@@ -1,48 +1,84 @@
-version: '3.8'
 services:
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    hostname: kafka
-    container_name: kafka
-    ports:
-      - "9092:9092"
-      - "9093:9093"
-    environment:
-      KAFKA_KRAFT_MODE: "true"  # This enables KRaft mode in Kafka.
-      KAFKA_PROCESS_ROLES: controller,broker  # Kafka acts as both broker and controller.
-      KAFKA_NODE_ID: 1  # A unique ID for this Kafka instance.
-      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093"  # Defines the controller voters.
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_LOG_DIRS: /var/lib/kafka/data  # Where Kafka stores its logs.
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"  # Kafka will automatically create topics if needed.
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1  # Since we’re running one broker, one replica is enough.
-      KAFKA_LOG_RETENTION_HOURS: 168  # Keep logs for 7 days.
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0  # No delay for consumer rebalancing.
-      CLUSTER_ID: "Mk3OEYBSD34fcwNTJENDM2Qk"  # A unique ID for the Kafka cluster.
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-
   db:
     image: mysql:5.7
     restart: always
     environment:
-      MYSQL_DATABASE: 'mydb'
-      # So you don't have to use root, but you can if you like
-      MYSQL_USER: 'user'
-      # You can use whatever password you like
-      MYSQL_PASSWORD: 'CantSayPassword'
-      # Password for root access
-      MYSQL_ROOT_PASSWORD: 'NoPasswordForIt'
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: CantSayPassword
+      MYSQL_ROOT_PASSWORD: NoPasswordForIt
       MYSQL_HOST: 'db'
     ports:
-      # <Port exposed> : <MySQL Port running inside container>
-      - '3306:3306'
+      - "3306:3306"
     volumes:
       - my-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  kafka:
+    image: bitnami/kafka:3.6
+    hostname: kafka
+    restart: unless-stopped
+    mem_limit: 1.5g
+    ports:
+      - "9092:9092"
+    environment:
+      # KRaft Mode Essentials
+      KAFKA_ENABLE_KRAFT: "yes"
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_PROCESS_ROLES: "controller,broker"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      
+      # Network Configuration
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      
+      # Performance
+      KAFKA_HEAP_OPTS: "-Xmx800m -Xms400m"
+      KAFKA_CFG_NUM_NETWORK_THREADS: "3"
+      KAFKA_CFG_NUM_IO_THREADS: "8"
+      
+      # Health Check Tuning
+      KAFKA_CFG_BACKGROUND_THREADS: "10"
+    volumes:
+      - kafka_data:/bitnami/kafka
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 --timeout 5000 | grep -q 'Version: 3.6'"]
+      interval: 15s
+      timeout: 20s
+      retries: 10
+      start_period: 60s
+
+  webhook:
+    build: ./webhook
+    ports:
+      - "8082:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    volumes:
+      - ./logs:/app/logs
+
+  service:
+    build: ./service
+    ports:
+      - "8081:8081"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    volumes:
+      - ./logs:/app/logs
 
 volumes:
   my-db:
+  kafka_data:
+  logs:
