@@ -1,0 +1,34 @@
+services:
+  webhook:
+    build: ./webhook
+    container_name: webhook
+    # "host" mode lets it see your existing MySQL and Kafka on localhost
+    network_mode: "host"
+    environment:
+      # Kafka Configuration
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"
+      
+      # Database Configuration (Connects to your existing MySQL container)
+      SPRING_DATASOURCE_URL: "jdbc:mysql://127.0.0.1:3306/mydb?useSSL=false&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: "user"
+      SPRING_DATASOURCE_PASSWORD: "CantSayPassword"
+      
+      # Since we are in host mode, we define the port the APP listens on here
+      SERVER_PORT: 8082 
+    volumes:
+      - ./logs:/app/logs
+
+  service:
+    build: ./service
+    container_name: service
+    network_mode: "host"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"
+      
+      SPRING_DATASOURCE_URL: "jdbc:mysql://127.0.0.1:3306/mydb?useSSL=false&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: "user"
+      SPRING_DATASOURCE_PASSWORD: "CantSayPassword"
+      
+      SERVER_PORT: 8083
+    volumes:
+      - ./logs:/app/logs
