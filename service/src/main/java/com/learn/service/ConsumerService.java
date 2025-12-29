@@ -33,6 +33,7 @@ public class ConsumerService {
     private void handleWebhook(String message) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             JsonNode rootNode = objectMapper.readTree(message);
 
             String source = rootNode.get("source").asText();

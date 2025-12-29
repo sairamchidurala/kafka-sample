@@ -51,6 +51,7 @@ public class WebhookController {
     private String wrapMessageWithSource(String source, String message) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             ObjectNode wrappedMessage = objectMapper.createObjectNode();
             wrappedMessage.put("source", source);
             wrappedMessage.set("payload", objectMapper.readTree(message));

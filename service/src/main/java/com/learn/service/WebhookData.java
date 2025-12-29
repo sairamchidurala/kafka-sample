@@ -32,6 +32,7 @@ public class WebhookData {
         this.platform = platform;
 
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         try {
             WebhookData parsedData = objectMapper.readValue(jsonString, WebhookData.class);
             this.object = parsedData.getObject();

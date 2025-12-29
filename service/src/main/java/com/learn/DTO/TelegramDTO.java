@@ -14,6 +14,8 @@ public class TelegramDTO {
             ObjectMapper objectMapper = new ObjectMapper();
             // Configure ObjectMapper to exclude null fields
             objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            // Ignore unknown properties
+            objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             this.update = objectMapper.readValue(request, Update.class);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse Telegram webhook request", e);
@@ -165,6 +167,7 @@ public class TelegramDTO {
         public Message reply_to_message;
         public Sticker sticker;
         public Animation animation;
+        public LinkPreviewOptions link_preview_options;
     }
 
     // Represents an incoming update from Telegram (webhook event)
@@ -209,5 +212,9 @@ public class TelegramDTO {
         public String file_id;
         public String file_unique_id;
         public int file_size;
+    }
+
+    public static class LinkPreviewOptions {
+        public boolean is_disabled;
     }
 }

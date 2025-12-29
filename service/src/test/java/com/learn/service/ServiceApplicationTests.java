@@ -19,6 +19,7 @@ class ServiceApplicationTests {
 		// """;
 
 		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		JsonNode rootNode = objectMapper.readTree(data);
 
 		String source = rootNode.get("source").asText();

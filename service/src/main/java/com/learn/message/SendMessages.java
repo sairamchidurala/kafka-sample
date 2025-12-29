@@ -37,6 +37,7 @@ public class SendMessages {
                     "message", Map.of("text", "You sent a " + messageType)
             );
             ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             String payload = objectMapper.writeValueAsString(messageData);
             sendMessageToFb(payload, webhookData.getSourceId());
         } else if(webhookData.getPlatform().equals("whatsapp")) {

@@ -52,7 +52,10 @@ public class TelegramService {
                 // Handle text message
                 if (update.message.text != null) {
                     String messageText = update.message.text;
-                    sendMessageToTelegram(String.valueOf(chatId), messageText);
+                    // Prevent infinite loops by not echoing bot messages
+                    if (!update.message.from.is_bot) {
+                        sendMessageToTelegram(String.valueOf(chatId), messageText);
+                    }
                 }
                 // Handle sticker message
                 else if (update.message.sticker != null) {
