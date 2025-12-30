@@ -2,7 +2,6 @@ services:
   webhook:
     build: ./webhook
     container_name: webhook
-    # "host" mode lets it see your existing MySQL and Kafka on localhost
     network_mode: "host"
     environment:
       # Kafka Configuration
@@ -32,3 +31,8 @@ services:
       SERVER_PORT: 8083
     volumes:
       - ./logs:/app/logs
+
+networks:
+  kafka_network:
+    external: true
+    name: kafka-sample_default
